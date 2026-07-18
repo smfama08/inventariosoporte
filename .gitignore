@@ -31,7 +31,7 @@ yarn-error.log
 
 # Environment
 .env
-src/environments/environment.ts
+# environment.ts se commitea con las credenciales de producción para el deploy.
 
 # Miscellaneous
 /.angular/cache

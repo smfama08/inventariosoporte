@@ -4,28 +4,45 @@ const path = require('path');
 const envPath = path.join(__dirname, '..', '.env');
 const outputPath = path.join(__dirname, '..', 'src', 'environments', 'environment.ts');
 
+// Valores actuales en environment.ts (por si no hay fuente de variables).
 let supabaseUrl = '';
 let supabaseKey = '';
+if (fs.existsSync(outputPath)) {
+  const actual = fs.readFileSync(outputPath, 'utf-8');
+  const mUrl = actual.match(/supabaseUrl:\s*'([^']*)'/);
+  const mKey = actual.match(/supabaseKey:\s*'([^']*)'/);
+  if (mUrl) supabaseUrl = mUrl[1];
+  if (mKey) supabaseKey = mKey[1];
+}
 
-if (fs.existsSync(envPath)) {
+// 1) Prioridad: variables de entorno del sistema (Netlify, CI, etc.).
+supabaseUrl = process.env.SUPABASE_URL || supabaseUrl;
+supabaseKey = process.env.SUPABASE_KEY || supabaseKey;
+
+// 2) Fallback: archivo .env local (desarrollo).
+if ((!supabaseUrl || !supabaseKey) && fs.existsSync(envPath)) {
   const lines = fs.readFileSync(envPath, 'utf-8').split('\n');
   for (const line of lines) {
     const [key, ...rest] = line.split('=');
     const value = rest.join('=').trim().replace(/^["']|["']$/g, '');
-    if (key.trim() === 'SUPABASE_URL') supabaseUrl = value;
-    if (key.trim() === 'SUPABASE_KEY') supabaseKey = value;
+    if (key.trim() === 'SUPABASE_URL') supabaseUrl = supabaseUrl || value;
+    if (key.trim() === 'SUPABASE_KEY') supabaseKey = supabaseKey || value;
   }
-} else {
-  console.warn('⚠  No se encontró .env. Copia .env.example a .env y completa los valores.');
+}
+
+if (!supabaseUrl || !supabaseKey) {
+  console.warn('⚠  No se encontraron SUPABASE_URL / SUPABASE_KEY en ninguna fuente.');
   console.warn('   El build funcionará pero la app no podrá conectar a Supabase.');
 }
 
+const production = process.env.NODE_ENV === 'production' || !!process.env.SUPABASE_URL;
+
 const content = `export const environment = {
-  production: false,
+  production: ${production},
   supabaseUrl: '${supabaseUrl}',
   supabaseKey: '${supabaseKey}',
 };
 `;
 
 fs.writeFileSync(outputPath, content, 'utf-8');
-console.log(`✓ environment.ts generated (supabaseUrl: ${supabaseUrl ? 'set' : 'EMPTY'})`);
+console.log(`✓ environment.ts generated (production: ${production}, supabaseUrl: ${supabaseUrl ? 'set' : 'EMPTY'})`);
