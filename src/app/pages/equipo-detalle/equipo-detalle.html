@@ -1,0 +1,131 @@
+<div class="space-y-6">
+  <a routerLink="/inventario" class="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-corp-700 dark:text-slate-400">
+    <lucide-icon [img]="icons.ArrowLeft" class="h-4 w-4" /> Volver al inventario
+  </a>
+
+  @if (cargando()) {
+    <div class="space-y-4">
+      <div class="skeleton h-8 w-1/3 rounded"></div>
+      <div class="skeleton h-40 w-full rounded-xl"></div>
+    </div>
+  } @else if (error()) {
+    <div class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 border border-red-200 text-sm">{{ error() }}</div>
+  } @else if (equipo(); as e) {
+    <header class="flex items-center justify-between gap-3 flex-wrap">
+      <div>
+        <h1 class="text-xl font-semibold text-slate-800 dark:text-slate-100 font-mono">{{ e.numero_serie }}</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+          {{ e.modelo?.marca }} {{ e.modelo?.modelo }} · {{ e.modelo?.articulo }}
+        </p>
+      </div>
+      <app-estado-badge [estado]="e.estado" />
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <!-- Datos generales -->
+      <section class="lg:col-span-2 space-y-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+          <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Información general</h2>
+          <dl class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+            <div><dt class="text-slate-400">Código AF</dt><dd class="font-mono">{{ e.af_referencia || '—' }}</dd></div>
+            <div><dt class="text-slate-400">Sucursal</dt><dd>{{ e.ubicacion?.sucursal || '—' }}</dd></div>
+            <div><dt class="text-slate-400">Área</dt><dd>{{ e.ubicacion?.area || '—' }}</dd></div>
+            <div><dt class="text-slate-400">Proveedor</dt><dd>{{ e.proveedor?.nombre || '—' }}</dd></div>
+            <div><dt class="text-slate-400">Localizado</dt><dd>{{ e.localizado ? 'Sí' : 'No' }}</dd></div>
+            <div><dt class="text-slate-400">Fecha ingreso</dt><dd>{{ e.fecha_ingreso ? (e.fecha_ingreso | date: 'mediumDate') : '—' }}</dd></div>
+          </dl>
+        </div>
+
+        @if (e.detalles_computadora?.length) {
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+            <h2 class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
+              <lucide-icon [img]="icons.Cpu" class="h-4 w-4" /> Especificaciones técnicas
+            </h2>
+            <dl class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+              @for (d of e.detalles_computadora; track d.id) {
+                <div><dt class="text-slate-400">Equipo</dt><dd class="font-mono">{{ d.nombre_equipo || '—' }}</dd></div>
+                <div><dt class="text-slate-400">Procesador</dt><dd>{{ d.procesador || '—' }}</dd></div>
+                <div><dt class="text-slate-400">RAM</dt><dd>{{ d.memoria_ram || '—' }}</dd></div>
+                <div><dt class="text-slate-400">SO</dt><dd>{{ d.sistema_operativo || '—' }}</dd></div>
+                <div><dt class="text-slate-400">MAC</dt><dd class="font-mono">{{ d.direccion_mac || '—' }}</dd></div>
+                <div><dt class="text-slate-400">Protector</dt><dd>{{ d.protector_sobretension ? 'Sí' : 'No' }}</dd></div>
+              }
+            </dl>
+          </div>
+        }
+
+        @if (e.historial_activo_fijo?.length) {
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+            <h2 class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
+              <lucide-icon [img]="icons.History" class="h-4 w-4" /> Historial AF
+            </h2>
+            <ul class="space-y-2 text-sm">
+              @for (h of e.historial_activo_fijo; track h.id) {
+                <li class="flex items-center justify-between">
+                  <span class="font-mono">{{ h.codigo_af }}</span>
+                  <span class="text-slate-400">{{ h.estado_af || '—' }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </section>
+
+      <!-- Asignaciones y bitácora -->
+      <section class="space-y-4">
+        @if (e.asignaciones_equipos?.length) {
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+            <h2 class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
+              <lucide-icon [img]="icons.UserCheck" class="h-4 w-4" /> Asignación de equipo
+            </h2>
+            <ul class="space-y-3 text-sm">
+              @for (a of e.asignaciones_equipos; track a.id) {
+                <li class="border-l-2 border-corp-200 dark:border-corp-700 pl-3">
+                  <div class="font-medium">{{ a.usuario?.nombre_completo || '—' }}</div>
+                  @if (a.usuario?.cargo) {
+                    <div class="text-slate-500 dark:text-slate-400 text-xs">{{ a.usuario?.cargo }}</div>
+                  }
+                  @if (a.usuario?.usuario_windows) {
+                    <div class="text-slate-400 text-xs">Usuario Windows: {{ a.usuario?.usuario_windows }}</div>
+                  }
+                  @if (a.usuario?.correo) {
+                    <div class="text-slate-400 text-xs">Correo: {{ a.usuario?.correo }}</div>
+                  }
+                  <div class="text-slate-400 text-xs">Fecha asignación: {{ a.fecha_asignacion ? (a.fecha_asignacion | date: 'mediumDate') : '—' }}</div>
+                  @if (a.notas) {
+                    <div class="text-slate-500 dark:text-slate-400 text-xs mt-1">Notas: {{ a.notas }}</div>
+                  }
+                </li>
+              }
+            </ul>
+          </div>
+        }
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+          <h2 class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
+            <lucide-icon [img]="icons.NotebookPen" class="h-4 w-4" /> Bitácora de observaciones
+          </h2>
+          <form (submit)="$event.preventDefault(); agregarObservacion()" class="mb-3 flex gap-2">
+            <input [(ngModel)]="nuevaObservacion" name="obs"
+              placeholder="Nueva observación..."
+              class="flex-1 px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+            <button type="submit" [disabled]="guardandoObs()"
+              class="px-3 py-2 rounded-md bg-corp-800 text-white text-sm hover:bg-corp-900 disabled:opacity-50">
+              <lucide-icon [img]="icons.Plus" class="h-4 w-4" />
+            </button>
+          </form>
+          <ul class="space-y-2 text-sm max-h-64 overflow-auto">
+            @for (o of observaciones(); track o.id) {
+              <li class="border-l-2 border-corp-200 dark:border-corp-700 pl-3">
+                <p class="text-slate-700 dark:text-slate-300">{{ o.observacion }}</p>
+                <span class="text-xs text-slate-400">{{ o.created_at | date: 'medium' }}</span>
+              </li>
+            } @empty {
+              <li class="text-slate-400 text-xs">Sin observaciones</li>
+            }
+          </ul>
+        </div>
+      </section>
+    </div>
+  }
+</div>

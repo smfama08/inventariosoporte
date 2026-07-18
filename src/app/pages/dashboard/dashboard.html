@@ -1,0 +1,97 @@
+<div class="space-y-6">
+  <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 class="text-xl font-semibold text-slate-800 dark:text-slate-100">Dashboard de Inventario</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400">Vista general del parque tecnológico</p>
+    </div>
+    <app-global-search-trigger />
+  </header>
+
+  @if (error()) {
+    <div class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm border border-red-200 dark:border-red-800">
+      {{ error() }}
+    </div>
+  }
+
+  <!-- Chips de filtros -->
+  <app-filter-chips [chips]="chips()" (quitar)="quitarChip($event)" (limpiar)="fs.limpiar()" />
+
+  <!-- Tarjetas de métricas -->
+  @if (cargando()) {
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      @for (i of [1,2,3,4]; track i) {
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+          <app-skeleton ancho="40%" alto="0.75rem" />
+          <app-skeleton ancho="60%" alto="1.75rem" />
+        </div>
+      }
+    </div>
+  } @else if (metricas(); as m) {
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+        <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs font-medium">
+          <lucide-icon [img]="iconos.Boxes" class="h-4 w-4" /> Total equipos
+        </div>
+        <div class="mt-2 text-2xl font-semibold text-slate-800 dark:text-slate-100 font-mono">{{ m.totalEquipos | number }}</div>
+      </div>
+      <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+        <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs font-medium">
+          <lucide-icon [img]="iconos.CheckCircle2" class="h-4 w-4" /> % Localizados
+        </div>
+        <div class="mt-2 text-2xl font-semibold text-green-600 dark:text-green-400 font-mono">{{ m.porcentajeLocalizados }}%</div>
+        <div class="text-xs text-slate-400 mt-1">{{ m.localizados }} de {{ m.totalEquipos }}</div>
+      </div>
+      <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+        <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs font-medium">
+          <lucide-icon [img]="iconos.MapPin" class="h-4 w-4" /> Sucursales
+        </div>
+        <div class="mt-2 text-2xl font-semibold text-slate-800 dark:text-slate-100 font-mono">{{ m.totalSucursales }}</div>
+      </div>
+      <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+        <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs font-medium">
+          <lucide-icon [img]="iconos.Truck" class="h-4 w-4" /> Proveedores
+        </div>
+        <div class="mt-2 text-2xl font-semibold text-slate-800 dark:text-slate-100 font-mono">{{ m.totalProveedores }}</div>
+      </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+        <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Equipos por artículo</h2>
+        <div class="h-72">
+          @if (m.porArticulo.length) {
+            <ngx-charts-bar-horizontal
+              [results]="m.porArticulo"
+              [scheme]="colorScheme"
+              [gradient]="false"
+              [xAxis]="true" [yAxis]="true"
+              [showDataLabel]="true"
+              [roundEdges]="true"
+              [legend]="false"
+            />
+          } @else {
+            <p class="text-sm text-slate-400">Sin datos</p>
+          }
+        </div>
+      </div>
+      <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+        <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Distribución por estado</h2>
+        <div class="h-72">
+          @if (m.porEstado.length) {
+            <ngx-charts-pie-chart
+              [results]="m.porEstado"
+              [scheme]="donaScheme"
+              [doughnut]="true"
+              [legend]="true"
+              [legendPosition]="legendPos"
+              [labels]="true"
+            />
+          } @else {
+            <p class="text-sm text-slate-400">Sin datos</p>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>

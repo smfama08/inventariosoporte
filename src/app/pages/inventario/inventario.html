@@ -1,0 +1,280 @@
+<div class="space-y-4">
+  <!-- Cabecera -->
+  <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 class="text-xl font-semibold text-slate-800 dark:text-slate-100">Inventario</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400">Listado de equipos con carga del servidor</p>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <app-global-search-trigger />
+      <button
+        type="button"
+        (click)="exportarExcel()"
+        class="flex items-center gap-1.5 px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-corp-500 transition-colors"
+      >
+        <lucide-icon [img]="iconos.FileSpreadsheet" class="h-4 w-4" /> Excel
+      </button>
+      <button
+        type="button"
+        (click)="exportarCsv()"
+        class="flex items-center gap-1.5 px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-corp-500 transition-colors"
+      >
+        <lucide-icon [img]="iconos.FileText" class="h-4 w-4" /> CSV
+      </button>
+      <button
+        type="button"
+        (click)="fs.limpiar()"
+        class="flex items-center gap-1.5 px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-corp-500 transition-colors"
+      >
+        <lucide-icon [img]="iconos.SlidersHorizontal" class="h-4 w-4" /> Filtros
+      </button>
+    </div>
+  </header>
+
+  <!-- Panel de filtros -->
+  <app-filter-panel />
+
+  <!-- Chips de filtros activos -->
+  <app-filter-chips [chips]="chips()" (quitar)="quitarChip($event)" (limpiar)="fs.limpiar()" />
+
+  <!-- Error -->
+  @if (error()) {
+    <div class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm border border-red-200 dark:border-red-800">
+      {{ error() }}
+    </div>
+  }
+
+  <!-- Barra de selección -->
+  @if (seleccionados().size > 0) {
+    <div class="flex items-center justify-between gap-2 px-3 py-2 rounded-md bg-corp-50 dark:bg-corp-900/30 border border-corp-100 dark:border-corp-800 text-sm text-corp-800 dark:text-corp-100">
+      <span class="font-medium">{{ seleccionados().size }} seleccionados</span>
+      <button type="button" (click)="limpiarSeleccion()" class="flex items-center gap-1 text-corp-700 dark:text-corp-200 hover:text-red-600">
+        <lucide-icon [img]="iconos.X" class="h-4 w-4" /> Limpiar
+      </button>
+    </div>
+  }
+
+  <!-- Vista móvil: tarjetas -->
+  <div class="md:hidden space-y-3">
+    @if (cargando()) {
+      @for (i of [1,2,3]; track i) {
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-2">
+          <app-skeleton ancho="60%" alto="1rem" />
+          <app-skeleton ancho="40%" alto="0.75rem" />
+          <app-skeleton ancho="80%" alto="0.75rem" />
+        </div>
+      }
+    } @else if (equipos().length === 0) {
+      <div class="p-8 text-center text-slate-400 dark:text-slate-500">Sin resultados</div>
+    } @else {
+      @for (e of equipos(); track e.id) {
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-sm text-slate-800 dark:text-slate-100">{{ e.numero_serie }}</span>
+            <app-estado-badge [estado]="e.estado" />
+          </div>
+          <div class="text-sm text-slate-600 dark:text-slate-300">{{ e.modelo?.articulo }} {{ e.modelo?.marca }} {{ e.modelo?.modelo }}</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400">{{ e.ubicacion?.sucursal }} / {{ e.ubicacion?.area }}</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400">Localizado: {{ e.localizado ? 'Sí' : 'No' }} · {{ e.fecha_ingreso | date: 'mediumDate' }}</div>
+          <a [routerLink]="['/equipo', e.id]" class="inline-block mt-1 text-xs text-corp-700 dark:text-corp-200 font-medium">Ver detalle →</a>
+        </div>
+      }
+    }
+  </div>
+
+  <!-- Vista escritorio: tabla -->
+  <div class="hidden md:block overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+    <table class="border-collapse" [style.minWidth]="columnas().reduce((s, c) => s + c.ancho, 0) + 'px'">
+      <thead class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800">
+        <tr>
+          <th class="border-b border-slate-200 dark:border-slate-700 px-2 py-2 w-10">
+            <input
+              type="checkbox"
+              [checked]="todosVisiblesSeleccionados()"
+              (change)="toggleTodos()"
+              class="accent-corp-700"
+              [attr.aria-label]="'Seleccionar todos'"
+            />
+          </th>
+          @for (col of columnas(); track col.key; let i = $index) {
+            <th
+              class="relative border-b border-slate-200 dark:border-slate-700 px-3 py-2 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 select-none cursor-move"
+              [style.width]="col.ancho + 'px'"
+              draggable="true"
+              (dragstart)="onDragStart(i, $event)"
+              (dragover)="$event.preventDefault()"
+              (drop)="onDrop(i)"
+            >
+              <button type="button" class="flex items-center gap-1 hover:text-corp-700 dark:hover:text-corp-200" (click)="ordenar(col.key)">
+                <span>{{ col.label }}</span>
+                @if (flechaPara(col.key) === 'up') {
+                  <lucide-icon [img]="iconos.ChevronUp" class="h-3 w-3" />
+                } @else if (flechaPara(col.key) === 'down') {
+                  <lucide-icon [img]="iconos.ChevronDown" class="h-3 w-3" />
+                }
+              </button>
+              <span
+                class="absolute top-0 right-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-corp-500"
+                (mousedown)="iniciarRedimension(i, $event)"
+              ></span>
+            </th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @if (cargando()) {
+          @for (r of [1,2,3,4,5]; track r) {
+            <tr class="border-b border-slate-100 dark:border-slate-800">
+              <td class="px-2 py-2"><app-skeleton ancho="1rem" alto="1rem" /></td>
+              @for (col of columnas(); track col.key) {
+                <td class="px-3 py-2"><app-skeleton [ancho]="(col.ancho * 0.6) + 'px'" alto="0.9rem" /></td>
+              }
+            </tr>
+          }
+        } @else if (equipos().length === 0) {
+          <tr>
+            <td [attr.colspan]="columnas().length + 1" class="px-3 py-10 text-center text-slate-400 dark:text-slate-500">
+              Sin resultados
+            </td>
+          </tr>
+        } @else {
+          @for (e of equipos(); track e.id) {
+            <tr class="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60">
+              <td class="px-2 py-2 align-top">
+                <div class="flex items-center gap-1">
+                  <button type="button" (click)="toggleExpandido(e.id)" class="text-slate-400 hover:text-corp-700" [attr.aria-label]="'Expandir'">
+                    @if (estaExpandido(e.id)) {
+                      <lucide-icon [img]="iconos.ChevronDown" class="h-4 w-4" />
+                    } @else {
+                      <lucide-icon [img]="iconos.ChevronRight" class="h-4 w-4" />
+                    }
+                  </button>
+                  <input type="checkbox" [checked]="seleccionados().has(e.id)" (change)="toggleSeleccion(e.id)" class="accent-corp-700" [attr.aria-label]="'Seleccionar equipo'" />
+                </div>
+              </td>
+              @for (col of columnas(); track col.key) {
+                <td class="px-3 py-2 text-sm text-slate-700 dark:text-slate-200" [style.width]="col.ancho + 'px'">
+                  @switch (col.key) {
+                    @case ('numero_serie') {
+                      <span class="font-mono">{{ e.numero_serie }}</span>
+                    }
+                    @case ('articulo') {
+                      {{ e.modelo?.articulo || '—' }}
+                    }
+                    @case ('marca') {
+                      {{ e.modelo?.marca || '—' }}
+                    }
+                    @case ('modelo') {
+                      {{ e.modelo?.modelo || '—' }}
+                    }
+                    @case ('estado') {
+                      <app-estado-badge [estado]="e.estado" />
+                    }
+                    @case ('sucursal') {
+                      {{ e.ubicacion?.sucursal || '—' }}
+                    }
+                    @case ('area') {
+                      {{ e.ubicacion?.area || '—' }}
+                    }
+                    @case ('proveedor') {
+                      {{ e.proveedor?.nombre || '—' }}
+                    }
+                    @case ('localizado') {
+                      {{ textoLocalizado(e) }}
+                    }
+                    @case ('fecha_ingreso') {
+                      {{ e.fecha_ingreso | date: 'mediumDate' }}
+                    }
+                    @case ('af_referencia') {
+                      <span class="font-mono">{{ e.af_referencia || '—' }}</span>
+                    }
+                    @case ('usuario_asignado') {
+                      {{ usuarioAsignado(e) }}
+                    }
+                  }
+                </td>
+              }
+            </tr>
+            @if (estaExpandido(e.id)) {
+              <tr class="border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                <td></td>
+                <td [attr.colspan]="columnas().length">
+                  <div class="px-3 py-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+                    <div><span class="text-slate-400">N° Serie:</span> <span class="font-mono">{{ e.numero_serie }}</span></div>
+                    <div><span class="text-slate-400">Código AF:</span> <span class="font-mono">{{ e.af_referencia || '—' }}</span></div>
+                    <div><span class="text-slate-400">Artículo:</span> {{ e.modelo?.articulo || '—' }}</div>
+                    <div><span class="text-slate-400">Marca:</span> {{ e.modelo?.marca || '—' }}</div>
+                    <div><span class="text-slate-400">Modelo:</span> {{ e.modelo?.modelo || '—' }}</div>
+                    <div><span class="text-slate-400">Estado:</span> <app-estado-badge [estado]="e.estado" /></div>
+                    <div><span class="text-slate-400">Ubicación:</span> {{ e.ubicacion?.sucursal || '—' }} / {{ e.ubicacion?.area || '—' }}</div>
+                    <div><span class="text-slate-400">Proveedor:</span> {{ e.proveedor?.nombre || '—' }}</div>
+                    <div><span class="text-slate-400">Localizado:</span> {{ textoLocalizado(e) }}</div>
+                    <div><span class="text-slate-400">Fecha ingreso:</span> {{ e.fecha_ingreso | date: 'mediumDate' }}</div>
+                    <div><span class="text-slate-400">Usuario asignado:</span> {{ usuarioAsignado(e) }}</div>
+                  </div>
+                  <div class="px-3 pb-3">
+                    <a [routerLink]="['/equipo', e.id]" class="inline-flex items-center gap-1 text-corp-700 dark:text-corp-200 font-medium hover:underline">
+                      Ver detalle completo →
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginación -->
+  @if (!cargando() && equipos().length > 0) {
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+        <span>Mostrar</span>
+        <select
+          [ngModel]="fs.porPagina()"
+          (ngModelChange)="cambiarPorPagina($event)"
+          class="px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200"
+        >
+          @for (pp of opcionesPorPagina; track pp) {
+            <option [ngValue]="pp">{{ pp }}</option>
+          }
+        </select>
+        <span>por página</span>
+        <span class="ml-2 text-slate-500 dark:text-slate-400">
+          Mostrando {{ rangoDesde() }}-{{ rangoHasta() }} de {{ total() }}
+        </span>
+      </div>
+
+      <div class="flex items-center gap-1">
+        <button
+          type="button"
+          (click)="paginaAnterior()"
+          [disabled]="fs.pagina() === 1"
+          class="px-3 py-1.5 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 disabled:opacity-40 enabled:hover:border-corp-500"
+        >
+          Anterior
+        </button>
+        @for (p of paginasVisibles(); track p) {
+          <button
+            type="button"
+            (click)="irPagina(p)"
+            [class.bg-corp-700]="p === fs.pagina()"
+            [class.text-white]="p === fs.pagina()"
+            class="px-3 py-1.5 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-corp-500"
+          >
+            {{ p }}
+          </button>
+        }
+        <button
+          type="button"
+          (click)="paginaSiguiente()"
+          [disabled]="fs.pagina() === totalPaginas()"
+          class="px-3 py-1.5 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 disabled:opacity-40 enabled:hover:border-corp-500"
+        >
+          Siguiente
+        </button>
+      </div>
+    </div>
+  }
+</div>
