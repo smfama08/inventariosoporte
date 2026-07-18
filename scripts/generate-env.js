@@ -16,8 +16,11 @@ if (fs.existsSync(outputPath)) {
 }
 
 // 1) Prioridad: variables de entorno del sistema (Netlify, CI, etc.).
-supabaseUrl = process.env.SUPABASE_URL || supabaseUrl;
-supabaseKey = process.env.SUPABASE_KEY || supabaseKey;
+//    Se ignoran valores vacíos para no sobrescribir lo ya existente.
+const sysUrl = (process.env.SUPABASE_URL || '').trim();
+const sysKey = (process.env.SUPABASE_KEY || '').trim();
+supabaseUrl = sysUrl || supabaseUrl;
+supabaseKey = sysKey || supabaseKey;
 
 // 2) Fallback: archivo .env local (desarrollo).
 if ((!supabaseUrl || !supabaseKey) && fs.existsSync(envPath)) {
