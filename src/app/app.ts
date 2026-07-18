@@ -1,6 +1,6 @@
 import { Component, inject, viewChild, HostListener } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
-import { LucideAngularModule, LayoutDashboard, Boxes, Search, Moon, Sun } from 'lucide-angular';
+import { LucideAngularModule, LayoutDashboard, Boxes, Search, Moon, Sun, Plus } from 'lucide-angular';
 import { ThemeService } from './services/theme.service';
 import { ToastService } from './services/toast.service';
 import { GlobalSearchComponent } from './components/global-search/global-search';
@@ -24,7 +24,7 @@ export class App {
   protected readonly toast = inject(ToastService);
   private readonly searchRef = viewChild.required(GlobalSearchComponent);
 
-  readonly icons = { LayoutDashboard, Boxes, Search, Moon, Sun };
+  readonly icons = { LayoutDashboard, Boxes, Search, Moon, Sun, Plus };
 
   @HostListener('document:keydown', ['$event'])
   onKeydown(e: KeyboardEvent): void {

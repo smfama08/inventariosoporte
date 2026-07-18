@@ -1,0 +1,124 @@
+<div class="space-y-6">
+  <a routerLink="/inventario" class="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-corp-700 dark:text-slate-400">
+    <lucide-icon [img]="icons.ArrowLeft" class="h-4 w-4" /> Volver al inventario
+  </a>
+
+  <header>
+    <h1 class="text-xl font-semibold text-slate-800 dark:text-slate-100">Registrar nuevo equipo</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400">Si el modelo, ubicación o proveedor no existen, puedes crearlos al vuelo.</p>
+  </header>
+
+  <form (submit)="$event.preventDefault(); guardar()" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-5">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Datos del equipo -->
+      <div class="space-y-4">
+        <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200">Datos del equipo</h2>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">N° Serie *</label>
+          <input [(ngModel)]="numeroSerie" name="numeroSerie" required
+            class="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Código AF</label>
+          <input [(ngModel)]="afReferencia" name="afReferencia"
+            class="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Código FF</label>
+          <input [(ngModel)]="codigoFf" name="codigoFf"
+            class="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Estado</label>
+          <select [(ngModel)]="estado" name="estado"
+            class="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+            <option value="">—</option>
+            @for (e of estados; track e) {
+              <option [value]="e">{{ e }}</option>
+            }
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Fecha de ingreso</label>
+          <input type="date" [(ngModel)]="fechaIngreso" name="fechaIngreso"
+            class="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+        </div>
+
+        <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+          <input type="checkbox" [(ngModel)]="localizado" name="localizado" class="accent-corp-700" />
+          Localizado
+        </label>
+      </div>
+
+      <!-- Relaciones -->
+      <div class="space-y-4">
+        <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200">Modelo de hardware</h2>
+        <select [(ngModel)]="modeloId" name="modeloId"
+          class="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+          <option value="">Selecciona un modelo…</option>
+          <option value="__nuevo__">+ Crear nuevo modelo</option>
+          @for (m of modelos(); track m.id) {
+            <option [value]="m.id">{{ m.articulo }} · {{ m.marca }} · {{ m.modelo }}</option>
+          }
+        </select>
+        @if (creandoModelo) {
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <input [(ngModel)]="nuevoArticulo" name="nuevoArticulo" placeholder="Artículo"
+              class="px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+            <input [(ngModel)]="nuevaMarca" name="nuevaMarca" placeholder="Marca"
+              class="px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+            <input [(ngModel)]="nuevoModelo" name="nuevoModelo" placeholder="Modelo"
+              class="px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+          </div>
+        }
+
+        <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200 pt-2">Ubicación</h2>
+        <select [(ngModel)]="ubicacionId" name="ubicacionId"
+          class="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+          <option value="">Selecciona una ubicación…</option>
+          <option value="__nuevo__">+ Crear nueva ubicación</option>
+          @for (u of ubicaciones(); track u.id) {
+            <option [value]="u.id">{{ u.sucursal }} / {{ u.area }}</option>
+          }
+        </select>
+        @if (creandoUbicacion) {
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <input [(ngModel)]="nuevaSucursal" name="nuevaSucursal" placeholder="Sucursal"
+              class="px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+            <input [(ngModel)]="nuevaArea" name="nuevaArea" placeholder="Área"
+              class="px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+          </div>
+        }
+
+        <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200 pt-2">Proveedor</h2>
+        <select [(ngModel)]="proveedorId" name="proveedorId"
+          class="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+          <option value="">Selecciona un proveedor…</option>
+          <option value="__nuevo__">+ Crear nuevo proveedor</option>
+          @for (p of proveedores(); track p.id) {
+            <option [value]="p.id">{{ p.nombre }}</option>
+          }
+        </select>
+        @if (creandoProveedor) {
+          <input [(ngModel)]="nuevoProveedor" name="nuevoProveedor" placeholder="Nombre del proveedor"
+            class="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+        }
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3 pt-2">
+      <button type="submit" [disabled]="guardando()"
+        class="flex items-center gap-1.5 px-4 py-2 rounded-md bg-corp-800 text-white text-sm hover:bg-corp-900 disabled:opacity-50">
+        <lucide-icon [img]="icons.Save" class="h-4 w-4" /> {{ guardando() ? 'Guardando…' : 'Registrar equipo' }}
+      </button>
+      <a routerLink="/inventario" class="px-4 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-300 hover:border-corp-500">
+        Cancelar
+      </a>
+    </div>
+  </form>
+</div>

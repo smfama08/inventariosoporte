@@ -13,6 +13,10 @@
                class="px-3 py-1.5 rounded-md text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
               Inventario
             </a>
+            <!-- <a routerLink="/equipo/nuevo"
+               class="px-3 py-1.5 rounded-md text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+              + Nuevo equipo
+            </a> -->
             <!-- <a routerLink="/dashboard"
                routerLinkActive="bg-corp-50 text-corp-700 dark:bg-corp-900/40 dark:text-corp-200"
                class="px-3 py-1.5 rounded-md text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
@@ -22,7 +26,10 @@
         </div>
 
         <div class="flex items-center gap-2">
-          
+          <button routerLink="/equipo/nuevo"
+                  class="flex items-center gap-1 px-3 py-1.5 rounded-md bg-corp-800 text-white text-sm hover:bg-corp-900 transition-colors">
+            <lucide-icon [img]="icons.Plus" class="h-4 w-4" /> Nuevo
+          </button>
           <button (click)="theme.toggle()"
                   class="p-2 rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   [attr.aria-label]="theme.esOscuro() ? 'Activar modo claro' : 'Activar modo oscuro'">

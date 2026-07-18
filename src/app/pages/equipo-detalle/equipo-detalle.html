@@ -25,22 +25,126 @@
       <!-- Datos generales -->
       <section class="lg:col-span-2 space-y-4">
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
-          <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Información general</h2>
-          <dl class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-            <div><dt class="text-slate-400">Código AF</dt><dd class="font-mono">{{ e.af_referencia || '—' }}</dd></div>
-            <div><dt class="text-slate-400">Sucursal</dt><dd>{{ e.ubicacion?.sucursal || '—' }}</dd></div>
-            <div><dt class="text-slate-400">Área</dt><dd>{{ e.ubicacion?.area || '—' }}</dd></div>
-            <div><dt class="text-slate-400">Proveedor</dt><dd>{{ e.proveedor?.nombre || '—' }}</dd></div>
-            <div><dt class="text-slate-400">Localizado</dt><dd>{{ e.localizado ? 'Sí' : 'No' }}</dd></div>
-            <div><dt class="text-slate-400">Fecha ingreso</dt><dd>{{ e.fecha_ingreso ? (e.fecha_ingreso | date: 'mediumDate') : '—' }}</dd></div>
-          </dl>
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200">Información general</h2>
+            <div class="flex items-center gap-2">
+              @if (!editandoGeneral()) {
+                <button type="button" (click)="iniciarEdicionGeneral()"
+                  class="flex items-center gap-1 text-xs text-corp-700 dark:text-corp-200 hover:underline">
+                  <lucide-icon [img]="icons.Pencil" class="h-3.5 w-3.5" /> Editar
+                </button>
+                <button type="button" (click)="eliminarEquipo()"
+                  class="flex items-center gap-1 text-xs text-red-600 hover:underline">
+                  <lucide-icon [img]="icons.Trash2" class="h-3.5 w-3.5" /> Eliminar
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (editandoGeneral()) {
+            <form (submit)="$event.preventDefault(); guardarGeneral()" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">N° Serie *</label>
+                <input [(ngModel)]="g_numeroSerie" name="g_serie" class="w-full px-2 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Código FF</label>
+                <input [(ngModel)]="g_codigoFf" name="g_ff" class="w-full px-2 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Código AF de referencia</label>
+                <input [(ngModel)]="g_afReferencia" name="g_af" class="w-full px-2 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Estado</label>
+                <select [(ngModel)]="g_estado" name="g_estado" class="w-full px-2 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+                  <option value="">—</option>
+                  @for (es of estados; track es) {
+                    <option [value]="es">{{ es }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Fecha ingreso</label>
+                <input type="date" [(ngModel)]="g_fechaIngreso" name="g_fecha" class="w-full px-2 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+              </div>
+              <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                <input type="checkbox" [(ngModel)]="g_localizado" name="g_loc" class="accent-corp-700" />
+                Localizado
+              </label>
+              <div class="sm:col-span-2 flex gap-2 pt-1">
+                <button type="submit" [disabled]="guardandoGeneral()"
+                  class="flex items-center gap-1 px-3 py-1.5 rounded-md bg-corp-800 text-white text-sm hover:bg-corp-900 disabled:opacity-50">
+                  <lucide-icon [img]="icons.Save" class="h-4 w-4" /> Guardar
+                </button>
+                <button type="button" (click)="editandoGeneral.set(false)"
+                  class="px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-300">Cancelar</button>
+              </div>
+            </form>
+          } @else {
+            <dl class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+              <div><dt class="text-slate-400">Código AF</dt><dd class="font-mono">{{ e.af_referencia || '—' }}</dd></div>
+              <div><dt class="text-slate-400">Código FF</dt><dd class="font-mono">{{ e.codigo_ff || '—' }}</dd></div>
+              <div><dt class="text-slate-400">Sucursal</dt><dd>{{ e.ubicacion?.sucursal || '—' }}</dd></div>
+              <div><dt class="text-slate-400">Área</dt><dd>{{ e.ubicacion?.area || '—' }}</dd></div>
+              <div><dt class="text-slate-400">Proveedor</dt><dd>{{ e.proveedor?.nombre || '—' }}</dd></div>
+              <div><dt class="text-slate-400">Localizado</dt><dd>{{ e.localizado ? 'Sí' : 'No' }}</dd></div>
+              <div><dt class="text-slate-400">Fecha ingreso</dt><dd>{{ e.fecha_ingreso ? (e.fecha_ingreso | date: 'mediumDate') : '—' }}</dd></div>
+            </dl>
+          }
         </div>
 
-        @if (e.detalles_computadora?.length) {
-          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
-            <h2 class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
-              <lucide-icon [img]="icons.Cpu" class="h-4 w-4" /> Especificaciones técnicas
+        <!-- Detalle de computadora -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+              <lucide-icon [img]="icons.Cpu" class="h-4 w-4" /> Detalle de computadora
             </h2>
+            @if (!editandoDetalle() && e.detalles_computadora?.length) {
+              <button type="button" (click)="iniciarEdicionDetalle()"
+                class="text-xs text-corp-700 dark:text-corp-200 hover:underline">Editar</button>
+            } @else if (!editandoDetalle()) {
+              <button type="button" (click)="iniciarEdicionDetalle()"
+                class="text-xs text-corp-700 dark:text-corp-200 hover:underline">Agregar</button>
+            }
+          </div>
+
+          @if (editandoDetalle()) {
+            <form (submit)="$event.preventDefault(); guardarDetalle()" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Nombre de equipo</label>
+                <input [(ngModel)]="det_nombre_equipo" name="det_nombre" class="w-full px-2 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Procesador</label>
+                <input [(ngModel)]="det_procesador" name="det_proc" class="w-full px-2 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Memoria RAM</label>
+                <input [(ngModel)]="det_memoria_ram" name="det_ram" class="w-full px-2 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Sistema operativo</label>
+                <input [(ngModel)]="det_sistema_operativo" name="det_so" class="w-full px-2 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Dirección MAC</label>
+                <input [(ngModel)]="det_direccion_mac" name="det_mac" class="w-full px-2 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+              </div>
+              <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                <input type="checkbox" [(ngModel)]="det_protector" name="det_prot" class="accent-corp-700" />
+                Protector de sobretensión
+              </label>
+              <div class="sm:col-span-2 flex gap-2 pt-1">
+                <button type="submit" [disabled]="guardandoDetalle()"
+                  class="flex items-center gap-1 px-3 py-1.5 rounded-md bg-corp-800 text-white text-sm hover:bg-corp-900 disabled:opacity-50">
+                  <lucide-icon [img]="icons.Save" class="h-4 w-4" /> Guardar
+                </button>
+                <button type="button" (click)="editandoDetalle.set(false)"
+                  class="px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-300">Cancelar</button>
+              </div>
+            </form>
+          } @else if (e.detalles_computadora?.length) {
             <dl class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
               @for (d of e.detalles_computadora; track d.id) {
                 <div><dt class="text-slate-400">Equipo</dt><dd class="font-mono">{{ d.nombre_equipo || '—' }}</dd></div>
@@ -51,55 +155,146 @@
                 <div><dt class="text-slate-400">Protector</dt><dd>{{ d.protector_sobretension ? 'Sí' : 'No' }}</dd></div>
               }
             </dl>
-          </div>
-        }
+          } @else {
+            <p class="text-sm text-slate-400">Sin detalle de computadora registrado.</p>
+          }
+        </div>
 
-        @if (e.historial_activo_fijo?.length) {
-          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
-            <h2 class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
-              <lucide-icon [img]="icons.History" class="h-4 w-4" /> Historial AF
-            </h2>
-            <ul class="space-y-2 text-sm">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+          <h2 class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
+            <lucide-icon [img]="icons.History" class="h-4 w-4" /> Historial AF
+          </h2>
+
+          @if (e.historial_activo_fijo?.length) {
+            <ul class="space-y-2 text-sm mb-3">
               @for (h of e.historial_activo_fijo; track h.id) {
-                <li class="flex items-center justify-between">
-                  <span class="font-mono">{{ h.codigo_af }}</span>
-                  <span class="text-slate-400">{{ h.estado_af || '—' }}</span>
+                <li class="flex items-center justify-between gap-2 border-l-2 pl-3"
+                    [class.border-corp-500]="h.estado_af === 'Activo'"
+                    [class.border-slate-200]="h.estado_af !== 'Activo'"
+                    [class.dark:border-corp-500]="h.estado_af === 'Activo'"
+                    [class.dark:border-slate-700]="h.estado_af !== 'Activo'">
+                  <div>
+                    <span class="font-mono">{{ h.codigo_af }}</span>
+                    @if (h.estado_af === 'Activo') {
+                      <span class="ml-2 text-xs px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">Activo</span>
+                    } @else {
+                      <span class="ml-2 text-xs text-slate-400">{{ h.estado_af || 'Inactivo' }}</span>
+                    }
+                  </div>
+                  <div class="flex items-center gap-1">
+                    @if (h.estado_af !== 'Activo') {
+                      <button type="button" (click)="activarAf(h.id, e.id)"
+                        class="flex items-center gap-1 text-xs text-corp-700 dark:text-corp-200 hover:underline"
+                        [attr.aria-label]="'Marcar como activo'">
+                        <lucide-icon [img]="icons.Check" class="h-3.5 w-3.5" /> Activar
+                      </button>
+                    }
+                    <button type="button" (click)="eliminarAf(h.id)"
+                      class="text-slate-400 hover:text-red-600" [attr.aria-label]="'Eliminar AF'">
+                      <lucide-icon [img]="icons.Trash2" class="h-4 w-4" />
+                    </button>
+                  </div>
                 </li>
               }
             </ul>
-          </div>
-        }
+          } @else {
+            <p class="text-sm text-slate-400 mb-3">Sin códigos AF registrados.</p>
+          }
+
+          <!-- Agregar nuevo AF -->
+          <form (submit)="$event.preventDefault(); agregarAf()" class="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-2">
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input [(ngModel)]="nuevoAf" name="nuevoAf" placeholder="Nuevo código AF…"
+                class="flex-1 px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+              <button type="submit" [disabled]="guardandoAf()"
+                class="flex items-center justify-center gap-1 px-3 py-2 rounded-md bg-corp-800 text-white text-sm hover:bg-corp-900 disabled:opacity-50">
+                <lucide-icon [img]="icons.Plus" class="h-4 w-4" /> Agregar AF
+              </button>
+            </div>
+            <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+              <input type="checkbox" [(ngModel)]="nuevoAfActivo" name="nuevoAfActivo" class="accent-corp-700" />
+              Marcar como activo (desactiva los anteriores)
+            </label>
+          </form>
+        </div>
       </section>
 
       <!-- Asignaciones y bitácora -->
       <section class="space-y-4">
-        @if (e.asignaciones_equipos?.length) {
-          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
-            <h2 class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
-              <lucide-icon [img]="icons.UserCheck" class="h-4 w-4" /> Asignación de equipo
-            </h2>
-            <ul class="space-y-3 text-sm">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+          <h2 class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
+            <lucide-icon [img]="icons.UserCheck" class="h-4 w-4" /> Asignación de equipo
+          </h2>
+
+          @if (e.asignaciones_equipos?.length) {
+            <ul class="space-y-3 text-sm mb-3">
               @for (a of e.asignaciones_equipos; track a.id) {
-                <li class="border-l-2 border-corp-200 dark:border-corp-700 pl-3">
-                  <div class="font-medium">{{ a.usuario?.nombre_completo || '—' }}</div>
-                  @if (a.usuario?.cargo) {
-                    <div class="text-slate-500 dark:text-slate-400 text-xs">{{ a.usuario?.cargo }}</div>
-                  }
-                  @if (a.usuario?.usuario_windows) {
-                    <div class="text-slate-400 text-xs">Usuario Windows: {{ a.usuario?.usuario_windows }}</div>
-                  }
-                  @if (a.usuario?.correo) {
-                    <div class="text-slate-400 text-xs">Correo: {{ a.usuario?.correo }}</div>
-                  }
-                  <div class="text-slate-400 text-xs">Fecha asignación: {{ a.fecha_asignacion ? (a.fecha_asignacion | date: 'mediumDate') : '—' }}</div>
-                  @if (a.notas) {
-                    <div class="text-slate-500 dark:text-slate-400 text-xs mt-1">Notas: {{ a.notas }}</div>
-                  }
+                <li class="border-l-2 border-corp-200 dark:border-corp-700 pl-3 flex items-start justify-between gap-2">
+                  <div>
+                    <div class="font-medium">{{ a.usuario?.nombre_completo || '—' }}</div>
+                    @if (a.usuario?.cargo) {
+                      <div class="text-slate-500 dark:text-slate-400 text-xs">{{ a.usuario?.cargo }}</div>
+                    }
+                    @if (a.usuario?.usuario_windows) {
+                      <div class="text-slate-400 text-xs">Usuario Windows: {{ a.usuario?.usuario_windows }}</div>
+                    }
+                    @if (a.usuario?.correo) {
+                      <div class="text-slate-400 text-xs">Correo: {{ a.usuario?.correo }}</div>
+                    }
+                    <div class="text-slate-400 text-xs">Fecha asignación: {{ a.fecha_asignacion ? (a.fecha_asignacion | date: 'mediumDate') : '—' }}</div>
+                    @if (a.notas) {
+                      <div class="text-slate-500 dark:text-slate-400 text-xs mt-1">Notas: {{ a.notas }}</div>
+                    }
+                  </div>
+                  <button type="button" (click)="eliminarAsignacion(a.id)"
+                    class="text-slate-400 hover:text-red-600" [attr.aria-label]="'Eliminar asignación'">
+                    <lucide-icon [img]="icons.Trash2" class="h-4 w-4" />
+                  </button>
                 </li>
               }
             </ul>
-          </div>
-        }
+          }
+
+          <!-- Formulario de asignación -->
+          <form (submit)="$event.preventDefault(); asignar()" class="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-3">
+            @if (!mostrarNuevoUsuario()) {
+              <select [(ngModel)]="usuarioSeleccionado" name="usuarioSel"
+                class="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+                <option [ngValue]="null">Selecciona un usuario…</option>
+                @for (u of usuarios(); track u.id) {
+                  <option [ngValue]="u.id">{{ u.nombre_completo }}</option>
+                }
+              </select>
+              <button type="button" (click)="mostrarNuevoUsuario.set(true)"
+                class="text-xs text-corp-700 dark:text-corp-200 hover:underline">+ Crear nuevo usuario</button>
+            } @else {
+              <input [(ngModel)]="nu_nombre" name="nu_nombre" placeholder="Nombre completo *"
+                class="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <input [(ngModel)]="nu_windows" name="nu_win" placeholder="Usuario Windows"
+                  class="px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+                <input [(ngModel)]="nu_correo" name="nu_correo" placeholder="Correo"
+                  class="px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+                <input [(ngModel)]="nu_cargo" name="nu_cargo" placeholder="Cargo"
+                  class="px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+              </div>
+              <button type="button" (click)="mostrarNuevoUsuario.set(false)"
+                class="text-xs text-slate-500 hover:underline">Cancelar y usar existente</button>
+            }
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <input [(ngModel)]="asignacionNotas" name="asigNotas" placeholder="Notas"
+                class="px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+              <input type="date" [(ngModel)]="asignacionFecha" name="asigFecha"
+                class="px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+            </div>
+
+            <button type="submit" [disabled]="guardandoAsignacion()"
+              class="flex items-center gap-1 px-3 py-2 rounded-md bg-corp-800 text-white text-sm hover:bg-corp-900 disabled:opacity-50">
+              <lucide-icon [img]="icons.Plus" class="h-4 w-4" /> {{ guardandoAsignacion() ? 'Asignando…' : 'Asignar equipo' }}
+            </button>
+          </form>
+        </div>
 
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
           <h2 class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">

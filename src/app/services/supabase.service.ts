@@ -13,6 +13,9 @@ import type {
   Proveedor,
   ModeloHardware,
   BitacoraObservacion,
+  Usuario,
+  AsignacionEquipo,
+  DetallesComputadora,
 } from '../types';
 import { configEstado } from '../core/constants';
 import { environment } from '../../environments/environment';
@@ -301,6 +304,218 @@ export class SupabaseService {
         .select()
         .single(),
     );
+  }
+
+  // --- Alta de registros ---
+
+  /** Crea un modelo de hardware y devuelve el registro insertado. */
+  async crearModelo(modelo: Omit<ModeloHardware, 'id' | 'created_at'>): Promise<ModeloHardware> {
+    return await this.safeQuery<ModeloHardware>(
+      this.supabase.from('modelos_hardware').insert(modelo).select().single(),
+    );
+  }
+
+  /** Devuelve el modelo por coincidencia exacta o lo crea si no existe. */
+  async obtenerOCrearModelo(m: {
+    articulo: string;
+    marca: string;
+    modelo: string;
+  }): Promise<ModeloHardware> {
+    const existente = await this.safeQuery<ModeloHardware[]>(
+      this.supabase
+        .from('modelos_hardware')
+        .select('*')
+        .eq('articulo', m.articulo)
+        .eq('marca', m.marca)
+        .eq('modelo', m.modelo)
+        .limit(1),
+    );
+    if (existente && existente.length) return existente[0];
+    return this.crearModelo(m);
+  }
+
+  /** Crea una ubicación y devuelve el registro insertado. */
+  async crearUbicacion(ubic: Omit<Ubicacion, 'id' | 'created_at'>): Promise<Ubicacion> {
+    return await this.safeQuery<Ubicacion>(
+      this.supabase.from('ubicaciones').insert(ubic).select().single(),
+    );
+  }
+
+  /** Devuelve la ubicación por sucursal+área o la crea si no existe. */
+  async obtenerOCrearUbicacion(u: { sucursal: string; area: string }): Promise<Ubicacion> {
+    const existente = await this.safeQuery<Ubicacion[]>(
+      this.supabase
+        .from('ubicaciones')
+        .select('*')
+        .eq('sucursal', u.sucursal)
+        .eq('area', u.area)
+        .limit(1),
+    );
+    if (existente && existente.length) return existente[0];
+    return this.crearUbicacion(u);
+  }
+
+  /** Crea un proveedor y devuelve el registro insertado. */
+  async crearProveedor(prov: Omit<Proveedor, 'id' | 'created_at'>): Promise<Proveedor> {
+    return await this.safeQuery<Proveedor>(
+      this.supabase.from('proveedores').insert(prov).select().single(),
+    );
+  }
+
+  /** Devuelve el proveedor por nombre o lo crea si no existe. */
+  async obtenerOCrearProveedor(nombre: string): Promise<Proveedor> {
+    const existente = await this.safeQuery<Proveedor[]>(
+      this.supabase.from('proveedores').select('*').eq('nombre', nombre).limit(1),
+    );
+    if (existente && existente.length) return existente[0];
+    return this.crearProveedor({ nombre });
+  }
+
+  /** Crea un equipo y devuelve el registro insertado. */
+  async crearEquipo(equipo: {
+    numero_serie: string;
+    codigo_ff?: string | null;
+    modelo_id: number;
+    ubicacion_id: number;
+    proveedor_id: number;
+    estado?: string | null;
+    localizado?: boolean;
+    fecha_ingreso?: string | null;
+    af_referencia?: string | null;
+  }): Promise<Equipo> {
+    return await this.safeQuery<Equipo>(
+      this.supabase.from('equipos').insert(equipo).select().single(),
+    );
+  }
+
+  // --- Usuarios, asignaciones y detalle de computadora ---
+
+  /** Lista todos los usuarios. */
+  async getUsuarios(): Promise<Usuario[]> {
+    return (
+      (await this.safeQuery<Usuario[]>(
+        this.supabase.from('usuarios').select('*').order('nombre_completo'),
+      )) ?? []
+    );
+  }
+
+  /** Crea un usuario y devuelve el registro insertado. */
+  async crearUsuario(usuario: Omit<Usuario, 'id' | 'created_at'>): Promise<Usuario> {
+    return await this.safeQuery<Usuario>(
+      this.supabase.from('usuarios').insert(usuario).select().single(),
+    );
+  }
+
+  /** Devuelve el usuario por nombre exacto o lo crea si no existe. */
+  async obtenerOCrearUsuario(usuario: {
+    nombre_completo: string;
+    usuario_windows?: string | null;
+    correo?: string | null;
+    cargo?: string | null;
+  }): Promise<Usuario> {
+    const existente = await this.safeQuery<Usuario[]>(
+      this.supabase
+        .from('usuarios')
+        .select('*')
+        .eq('nombre_completo', usuario.nombre_completo)
+        .limit(1),
+    );
+    if (existente && existente.length) return existente[0];
+    return this.crearUsuario(usuario);
+  }
+
+  /** Asigna un equipo a un usuario. */
+  async asignarEquipo(asignacion: {
+    equipo_id: number;
+    usuario_id: number;
+    notas?: string | null;
+    fecha_asignacion?: string | null;
+  }): Promise<AsignacionEquipo> {
+    return await this.safeQuery<AsignacionEquipo>(
+      this.supabase.from('asignaciones_equipos').insert(asignacion).select().single(),
+    );
+  }
+
+  /** Elimina una asignación. */
+  async eliminarAsignacion(id: number): Promise<void> {
+    await this.safeQuery(
+      this.supabase.from('asignaciones_equipos').delete().eq('id', id),
+    );
+  }
+
+  /** Crea o actualiza el detalle de computadora de un equipo.
+   *  Como la relación es 1:1 (UNIQUE equipo_id), upserta por equipo_id. */
+  async guardarDetalleComputadora(detalle: Omit<DetallesComputadora, 'id' | 'created_at'>): Promise<DetallesComputadora> {
+    return await this.safeQuery<DetallesComputadora>(
+      this.supabase
+        .from('detalles_computadora')
+        .upsert(detalle, { onConflict: 'equipo_id' })
+        .select()
+        .single(),
+    );
+  }
+
+  // --- Historial de activo fijo (códigos AF) ---
+
+  /** Agrega un nuevo código AF al equipo. Si se marca como activo, los
+   *  demás AF del equipo pasan a 'Inactivo'. El código AF es UNIQUE. */
+  async agregarAf(equipoId: number, codigoAf: string, activo: boolean): Promise<void> {
+    if (activo) {
+      await this.supabase
+        .from('historial_activo_fijo')
+        .update({ estado_af: 'Inactivo' })
+        .eq('equipo_id', equipoId);
+    }
+    await this.safeQuery(
+      this.supabase
+        .from('historial_activo_fijo')
+        .insert({ equipo_id: equipoId, codigo_af: codigoAf, estado_af: activo ? 'Activo' : 'Inactivo' })
+        .select()
+        .single(),
+    );
+  }
+
+  /** Marca un AF como activo e inactiva los demás del mismo equipo. */
+  async activarAf(id: number, equipoId: number): Promise<void> {
+    await this.supabase
+      .from('historial_activo_fijo')
+      .update({ estado_af: 'Inactivo' })
+      .eq('equipo_id', equipoId);
+    await this.safeQuery(
+      this.supabase.from('historial_activo_fijo').update({ estado_af: 'Activo' }).eq('id', id),
+    );
+  }
+
+  /** Elimina un código AF del historial. */
+  async eliminarAf(id: number): Promise<void> {
+    await this.safeQuery(this.supabase.from('historial_activo_fijo').delete().eq('id', id));
+  }
+
+  // --- Edición y eliminación de equipo ---
+
+  /** Actualiza los campos editables del equipo. */
+  async actualizarEquipo(
+    id: number,
+    campos: {
+      numero_serie?: string;
+      codigo_ff?: string | null;
+      modelo_id?: number;
+      ubicacion_id?: number;
+      proveedor_id?: number;
+      estado?: string | null;
+      localizado?: boolean;
+      fecha_ingreso?: string | null;
+      af_referencia?: string | null;
+    },
+  ): Promise<Equipo> {
+    return await this.safeQuery<Equipo>(
+      this.supabase.from('equipos').update(campos).eq('id', id).select().single(),
+    );
+  }
+
+  /** Elimina un equipo (las relaciones con ON DELETE se encargan del resto). */
+  async eliminarEquipo(id: number): Promise<void> {
+    await this.safeQuery(this.supabase.from('equipos').delete().eq('id', id));
   }
 }
 
